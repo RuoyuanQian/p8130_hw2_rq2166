@@ -1,0 +1,207 @@
+---
+title: "p8130_hw2_rq2166"
+author: "Ruoyuan Qian"
+date: "2019/9/30"
+output: pdf_document
+---
+# Problem 1
+
+```{r}
+library(ggplot2)
+library(plyr)
+```
+
+```{r }
+#NYC
+dpois(30, 42.5)
+
+#non-hispanic whites
+lam_w = 0.428*8.5*6.02
+dpois(30,lam_w)
+
+#blacks
+lam_b = 0.31*0.243*8.5
+dpois(30,lam_b)
+
+#Asian
+lam_a = 0.14*0.39*8.5
+dpois(30,lam_a)
+```
+According to the result, the probability of exactly 30 cases occur in non-hispanic whites is greater than the probability in NYC. However, as for other racial groups, the probability is extremely small and near to zero.
+
+# Problem 2
+```{r ,message=FALSE}
+library(readxl)
+library(dplyr)
+library(arsenal)
+raw_data<-read_excel(".\\data\\Exercise.xlsx",skip =1)
+ fixed_data    <-     raw_data %>% mutate(
+         Group  =     recode(Group,  "0" = "Control","1" = "Intervention"),
+         Gender =     recode(Gender, "1" = "male", "2" = "female"),
+         HTN    =     recode(HTN,    "0" = "no",   "1" = "yes"),
+         T2DM   =     recode(T2DM,   "0" = "no",   "1" = "yes"),
+         Smokes =     recode(Smokes, "0" = "no",   "1" = "yes"),
+         Depression = recode(Depression, "0" = "no", "1" = "yes"),
+         Race   =     recode(Race,   "1" = "African American", 
+                                     "2" = "Hispanic",
+                                     "3" = "African American",
+                                     "4" = "G"))
+#rename variables
+ names(fixed_data)[c(9:20)]=c("SYS_PRE","SYS_POST","DIA_PRE","DIA_POST",
+                              "BMI_PRE","BMI_POST","HDL_PRE","HDL_POST",
+                              "LDL_PRE","LDL_POST","GLU_PRE","GLU_POST")
+ 
+ 
+
+```
+## a)
+```{r}
+# post-pre
+BMI_i = fixed_data %>% 
+  filter(Group == "Intervention") %>% 
+  select(BMI_POST,BMI_PRE )
+t.test(BMI_i$BMI_PRE, BMI_i$BMI_POST,paired=T)
+```
+
+```{r}
+BMI_c = fixed_data %>% 
+  filter(Group == "Control") %>% 
+  select(BMI_POST, BMI_PRE)
+t.test(BMI_c$BMI_PRE, BMI_c$BMI_POST,paired=T)
+```
+## b)
+```{r}
+
+BMI_i = 
+  BMI_i %>% 
+  mutate(
+    d_inter = BMI_POST - BMI_PRE
+  )
+
+BMI_c = 
+  BMI_c %>% 
+  mutate(
+    d_con = BMI_POST - BMI_PRE
+  )
+
+var.test(BMI_i$d_inter,BMI_c$d_con, alternative = "two.sided")
+## the variance is not equal
+
+t.test(abs(BMI_i$d_inter),abs(BMI_c$d_con),paired=F,var.equal=FALSE,alternative = "two.sided")
+
+```
+
+## c)
+
+### i graph of normality
+```{r}
+fixed_data =fixed_data %>% 
+  mutate(
+    d=BMI_POST-BMI_PRE
+  ) 
+
+
+bmi_mean = ddply(fixed_data,"Group",summarise,
+      bmi_pre_mean=mean(BMI_PRE),
+      bmi_post_mean=mean(BMI_POST),
+      bmi_d_mean=mean(d))
+
+x<-rnorm(3000,0,100)
+funss<-function(x) 1/sqrt(2*pi)*exp(-1/2*x^2)
+
+ ggplot(fixed_data,aes( x = d, fill=Group)) +
+  geom_density(alpha = .5) +
+  expand_limits(x=c(-6,6)) +
+  geom_vline(data=bmi_mean,
+             aes(xintercept=bmi_d_mean,color=Group),
+               linetype="dashed", size=1)+
+  stat_function(fun = funss,geom="line",color="red",size=.2,alpha = .4)
+ 
+  fixed_data %>% 
+    filter(Group=="Intervention") %>% 
+ ggplot(aes( x = d, fill=Group)) +
+  geom_density(alpha = .5) +
+  expand_limits(x=c(-6,6)) +
+  geom_vline(data=bmi_mean,
+             aes(xintercept=bmi_d_mean[2]),
+               linetype="dashed", size=1)+
+  stat_function(fun = funss,geom="line",color="red",size=.2,alpha = .4)
+  
+    fixed_data %>% 
+    filter(Group=="Control") %>% 
+ ggplot(aes( x = d, fill=Group)) +
+  geom_density(alpha = .5) +
+  expand_limits(x=c(-6,6)) +
+  geom_vline(data=bmi_mean,
+             aes(xintercept=bmi_d_mean[1]),
+               linetype="dashed", size=1)+
+  stat_function(fun = funss,geom="line",color="red",size=.2,alpha = .4)
+
+```
+According to the graphs, the distridution of Intervention is right skewed while the Control is approximately bell-shaped and can be seemed as normal distribution. 
+
+# Problem 3
+## exactly distribution
+```{r}
+1-pbinom(9,20,0.6)
+```
+## approximately distribution(normal)
+```{r}
+set.seed(1001)
+n=20
+p=0.6
+x = dplyr::tibble(a =c(rbinom(10,n,p)) )
+
+ggplot(x,aes(x = a))+
+  geom_density() +
+  expand_limits(x=c(5,20)) 
+
+mu = n*p
+var = n*p*(1-p)
+#pnorm(1.96,0,1)
+#  qnorm(0.975,0,1)
+1-pnorm(9,mu,sqrt(var))
+
+
+```
+## approximately poisson
+```{r}
+lambda = n*p
+1 - ppois(9,lambda)
+```
+Both the approximately normal and poisoson distributions are not appropriate distribution of the binominal one in the specific senarios, because both of them do not satisfy the critiria of transmission, which is ... 
+
+# Problem 4
+## a)
+
+paired-t.test
+```{r}
+with(sleep,
+     t.test(extra[group == 2],
+            extra[group == 1], paired = TRUE))
+
+
+```
+
+## b) confidence interval
+
+95% confidence
+
+ 0.7001142 2.4598858
+
+
+## c) posteriori power
+
+```{r}
+delta=1.58
+n=10
+sd=
+  with(sleep,
+  sd(extra[group == 2]-extra[group == 1]))
+
+power=
+  pnorm(-qnorm(1-0.05,0,1)+delta/(sd/sqrt(n)))
+power
+
+```
+
