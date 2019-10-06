@@ -86,22 +86,22 @@ t.test( BMI_i$BMI_POST,
 ```
 Paired-t.test calculating step by step using formulae
 ```{r }
-d_i   = mean(BMI_i$BMI_POST - BMI_i$BMI_PRE)
-sd_i  = sd((BMI_i$BMI_POST - BMI_i$BMI_PRE))
+d_i   = round(mean(BMI_i$BMI_POST - BMI_i$BMI_PRE),2)
+sd_i  = round(sd((BMI_i$BMI_POST - BMI_i$BMI_PRE)),2)
 n     = length(BMI_i$BMI_PRE)
 
 # calculate the test-statistics
-t_s = d_i/(sd_i/sqrt(n))
+t_s = round(d_i/(sd_i/sqrt(n)),2)
 
 # calculate t-value when type 1 error = .05
 t_a = qt(0.975,n-1)
 
-p_value = 2*pt(t_s,n-1)
+p_value = 2*round((pt(t_s,n-1)),5)
 p_value
 
 # calculate the confidence interval
-CI = paste(round(d_i-qt(0.975,n-1)*sqrt(sd_i^2/n),5),
-           round(d_i+qt(0.975,n-1)*sqrt(sd_i^2/n),5))
+CI = paste(round(d_i-round((qt(0.975,n-1)),2)*sqrt(sd_i^2/n),2),
+           round(d_i+round((qt(0.975,n-1)),2)*sqrt(sd_i^2/n),2))
 CI
 ```
 **As for the control group**
@@ -117,22 +117,22 @@ t.test(BMI_c$BMI_POST, BMI_c$BMI_PRE,paired=T)
 
 Paired-t.test calculating step by step using formulae
 ```{r }
-d_c   = mean(BMI_c$BMI_POST-BMI_c$BMI_PRE)
-sd_c  = sd(BMI_c$BMI_POST-BMI_c$BMI_PRE)
+d_c   = round(mean(BMI_c$BMI_POST-BMI_c$BMI_PRE),2)
+sd_c  = round(sd(BMI_c$BMI_POST-BMI_c$BMI_PRE),2)
 n     = length(BMI_c$BMI_PRE)
 
 # calculate the test-statistics
-t_s = d_c/(sd_c/sqrt(n))
+t_s = round(d_c/(sd_c/sqrt(n)),2)
 
 # calculate t-value when type 1 error = .05
 t_a = qt(0.975,n-1)
 
-p_value = 2*(1-pt(t_s,n-1))
+p_value = 2*(1-round((pt(t_s,n-1)),5))
 p_value
 
 # calculate the confidence interval
-CI = paste(round(d_c-qt(0.975,n-1)*sqrt(sd_c^2/n),5),
-           round(d_c+qt(0.975,n-1)*sqrt(sd_c^2/n),5))
+CI = paste(round(d_c-round((qt(0.975,n-1)),2)*sqrt(sd_c^2/n),2),
+           round(d_c+round((qt(0.975,n-1)),2)*sqrt(sd_c^2/n),2))
 CI
 ```
 ## b)
@@ -184,14 +184,14 @@ df = ((sd_i^2/n) + (sd_c^2/n))^2/
 t_a = qt(0.975,round(df))
 
 
-p_value = 2*pt(t_s,round(df))
+p_value = 2*round((pt(t_s,round(df))),5)
 p_value
 
 # calculate the confidence interval
-CI = paste(round(d_i-d_c-qt(0.975,round(df))*
-                   sqrt(sd_i^2/n+sd_c^2/n),5),
-           round(d_i-d_c+qt(0.975,round(df))*
-                   sqrt(sd_i^2/n+sd_c^2/n),5))
+CI = paste(round(d_i-d_c-round((qt(0.975,round(df))),2)*
+                   sqrt(sd_i^2/n+sd_c^2/n),2),
+           round(d_i-d_c+round((qt(0.975,round(df))),2)*
+                   sqrt(sd_i^2/n+sd_c^2/n),2))
 CI
 ```
 
@@ -248,7 +248,7 @@ ggqqplot(BMI_c$d_con,main="Q-Q plot for control group")
 
 
 # Problem 3
-## exactly distribution
+## Exactly distribution
 ```{r}
 n = 20
 p = 0.6
@@ -256,16 +256,16 @@ p = 0.6
 # Probability that 10 or more restaurants
 1-pbinom(9,n,p)
 ```
-## approximately distribution(normality)
+## Approximately distribution(Normality)
 ```{r}
 mu = n*p
 var = n*p*(1-p)
 
 # probability that 10 or more restaurants(10<x<20)
-pnorm(20.5,mu,sqrt(var))-pnorm(9.5,mu ,sqrt(var))
+round((pnorm(20.5,mu,sqrt(var))),5)-round((pnorm(9.5,mu ,sqrt(var))),5)
 
 ```
-## approximately poisson
+## Approximate distribution(Poisson)
 ```{r}
 lambda = n*p
 
@@ -287,8 +287,8 @@ with(sleep,
 Paired-t.test calculating step by step using formulae
 ```{r}
 n  = with(sleep,length(extra[group == 2]))
-d  = with(sleep,sum((extra[group == 2]-extra[group == 1]))/(n))
-sd = with(sleep,sd  (extra[group == 2]-extra[group == 1]))
+d  = round(with(sleep,sum((extra[group == 2]-extra[group == 1]))/(n)),2)
+sd = round(with(sleep,sd  (extra[group == 2]-extra[group == 1])),2)
 
 # calculate the test-statistics
 t_s = d/(sd/sqrt(n))
@@ -296,18 +296,18 @@ t_s = d/(sd/sqrt(n))
 # calculate t-value when type 1 error = .05
 t_a = qt(0.95,n-1)
 
-p_value = 1-pt(t_s,n-1)
+p_value = 1-round((pt(t_s,n-1)),5)
 p_value
 
 
 
 ```
 
-## b) confidence interval
+## b)
 
 ```{r}
 # calculate the confidence interval
-CI = paste(round(d-qt(0.95,n-1)*sqrt(sd^2/n),5),"Inf")
+CI = paste(round(d-round((qt(0.95,n-1)),2)*sqrt(sd^2/n),2),"Inf")
 CI
 ```
 
@@ -319,7 +319,8 @@ CI
 delta = d
 
 power=
-  pt(-qt(1-0.05,n-1) + delta/(sd/sqrt(n)),n-1)
+  round(pt(-round((qt(1-0.05,n-1)),2) +
+             delta/(sd/sqrt(n)),n-1),3)
 
 power
 
