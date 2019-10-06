@@ -1,39 +1,57 @@
 ---
 title: "p8130_hw2_rq2166"
 author: "Ruoyuan Qian"
-date: "2019/9/30"
-output: github_document
+date: "2019/10/02"
+output:   
+  html_document:
+    toc: true
+    toc_float: true
 ---
 # Problem 1
 
-```{r}
+```{r set up,message=FALSE}
 library(ggplot2)
 library(plyr)
-```
-
-```{r }
-#NYC
-dpois(30, 42.5)
-
-#non-hispanic whites
-lam_w = 0.428*8.5*6.02
-dpois(30,lam_w)
-
-#blacks
-lam_b = 0.31*0.243*8.5
-dpois(30,lam_b)
-
-#Asian
-lam_a = 0.14*0.39*8.5
-dpois(30,lam_a)
-```
-According to the result, the probability of exactly 30 cases occur in non-hispanic whites is greater than the probability in NYC. However, as for other racial groups, the probability is extremely small and near to zero.
-
-# Problem 2
-```{r ,message=FALSE}
 library(readxl)
 library(dplyr)
 library(arsenal)
+#install.packages("ggpubr")
+library(ggpubr)
+```
+## a)
+
+probability that in NYC exactly 30 cases occur
+```{r }
+lam = 5*8.5
+n   = 30
+dpois(n, lam)
+```
+## b)
+
+Probability that in NYC exactly 30 cases in Asians occur
+```{r}
+lam_a = 0.14*0.39*8.5
+n     = 30
+dpois(n,lam_a)
+```
+The probability that in NYC exactly 30 cases in non-Hispanic Whites occur
+```{r}
+lam_w = 0.428*8.5*6.02
+n     = 30
+dpois(n,lam_w)
+```
+The probability that in NYC exactly 30 cases in Black occur
+```{r }
+#blacks
+lam_b = 0.31*0.243*8.5
+n     = 30
+dpois(n,lam_b)
+```
+# Problem 2
+
+Input data
+```{r ,message=FALSE}
+
 raw_data<-read_excel(".\\data\\Exercise.xlsx",skip =1)
  fixed_data    <-     raw_data %>% mutate(
          Group  =     recode(Group,  "0" = "Control","1" = "Intervention"),
@@ -44,8 +62,7 @@ raw_data<-read_excel(".\\data\\Exercise.xlsx",skip =1)
          Depression = recode(Depression, "0" = "no", "1" = "yes"),
          Race   =     recode(Race,   "1" = "African American", 
                                      "2" = "Hispanic",
-                                     "3" = "African American",
-                                     "4" = "G"))
+                                     "3" = "African American"))
 #rename variables
  names(fixed_data)[c(9:20)]=c("SYS_PRE","SYS_POST","DIA_PRE","DIA_POST",
                               "BMI_PRE","BMI_POST","HDL_PRE","HDL_POST",
@@ -55,205 +72,257 @@ raw_data<-read_excel(".\\data\\Exercise.xlsx",skip =1)
 
 ```
 ## a)
+**As for the intervention group**
+
+Paired-t.test using `t.test` function
 ```{r}
-# post-pre
 BMI_i = fixed_data %>% 
   filter(Group == "Intervention") %>% 
   select(BMI_POST,BMI_PRE )
-t.test(BMI_i$BMI_PRE, BMI_i$BMI_POST,paired=T)
-```
 
+t.test( BMI_i$BMI_POST, 
+        BMI_i$BMI_PRE , 
+        paired=T, alternative = "two.sided")
+```
+Paired-t.test calculating step by step using formulae
+```{r }
+d_i   = mean(BMI_i$BMI_POST - BMI_i$BMI_PRE)
+sd_i  = sd((BMI_i$BMI_POST - BMI_i$BMI_PRE))
+n     = length(BMI_i$BMI_PRE)
+
+# calculate the test-statistics
+t_s = d_i/(sd_i/sqrt(n))
+
+# calculate t-value when type 1 error = .05
+t_a = qt(0.975,n-1)
+
+p_value = 2*pt(t_s,n-1)
+p_value
+
+# calculate the confidence interval
+CI = paste(round(d_i-qt(0.975,n-1)*sqrt(sd_i^2/n),5),
+           round(d_i+qt(0.975,n-1)*sqrt(sd_i^2/n),5))
+CI
+```
+**As for the control group**
+
+Paired-t.test using `t.test` function
 ```{r}
 BMI_c = fixed_data %>% 
   filter(Group == "Control") %>% 
   select(BMI_POST, BMI_PRE)
-t.test(BMI_c$BMI_PRE, BMI_c$BMI_POST,paired=T)
+
+t.test(BMI_c$BMI_POST, BMI_c$BMI_PRE,paired=T)
+```
+
+Paired-t.test calculating step by step using formulae
+```{r }
+d_c   = mean(BMI_c$BMI_POST-BMI_c$BMI_PRE)
+sd_c  = sd(BMI_c$BMI_POST-BMI_c$BMI_PRE)
+n     = length(BMI_c$BMI_PRE)
+
+# calculate the test-statistics
+t_s = d_c/(sd_c/sqrt(n))
+
+# calculate t-value when type 1 error = .05
+t_a = qt(0.975,n-1)
+
+p_value = 2*(1-pt(t_s,n-1))
+p_value
+
+# calculate the confidence interval
+CI = paste(round(d_c-qt(0.975,n-1)*sqrt(sd_c^2/n),5),
+           round(d_c+qt(0.975,n-1)*sqrt(sd_c^2/n),5))
+CI
 ```
 ## b)
-```{r}
+**Test the equality of the variance first**
 
+F test using `var.test` function
+```{r}
 BMI_i = 
   BMI_i %>% 
   mutate(
-    d_inter = BMI_POST - BMI_PRE
-  )
+    d_inter = BMI_POST - BMI_PRE)
 
 BMI_c = 
   BMI_c %>% 
   mutate(
-    d_con = BMI_POST - BMI_PRE
-  )
+    d_con = BMI_POST - BMI_PRE)
 
 var.test(BMI_i$d_inter,BMI_c$d_con, alternative = "two.sided")
-## the variance is not equal
+```
+F test calculating step by step using formulae
+```{r }
+# calculate the test-statistics
+f_s = sd_i^2/sd_c^2
 
-t.test(abs(BMI_i$d_inter),abs(BMI_c$d_con),paired=F,var.equal=FALSE,alternative = "two.sided")
+# calculate F-value when type 1 error = .05
+f_a = qf(0.975,n-1,n-1)
 
+f_s < f_a
+```
+Are the variances equal?``r f_s < f_a``
+So the variance is not equal
+
+Independent samples t-test for unequal variances using `t.test` function
+```{r }
+t.test(BMI_i$d_inter,BMI_c$d_con,
+       paired=F,var.equal=FALSE,
+       alternative = "two.sided")
+```
+Independent samples t-test for unequal variances calculating step by step using formulae
+```{r }
+# calculate the test-statistics
+t_s = (d_i-d_c)/(sqrt(sd_i^2/n+sd_c^2/n))
+
+# calculate the df value
+df = ((sd_i^2/n) + (sd_c^2/n))^2/
+     ((sd_i^2/n)^2/(n-1) + (sd_c^2/n)^2/(n-1))
+
+# calculate t-value when type 1 error = .05
+t_a = qt(0.975,round(df))
+
+
+p_value = 2*pt(t_s,round(df))
+p_value
+
+# calculate the confidence interval
+CI = paste(round(d_i-d_c-qt(0.975,round(df))*
+                   sqrt(sd_i^2/n+sd_c^2/n),5),
+           round(d_i-d_c+qt(0.975,round(df))*
+                   sqrt(sd_i^2/n+sd_c^2/n),5))
+CI
 ```
 
 ## c)
 
-### i graph of normality
+### i) 
+graph of density
 ```{r}
+# grap for intervention group
 fixed_data =fixed_data %>% 
   mutate(
     d=BMI_POST-BMI_PRE
   ) 
 
-
-bmi_mean = ddply(fixed_data,"Group",summarise,
-      bmi_pre_mean=mean(BMI_PRE),
-      bmi_post_mean=mean(BMI_POST),
-      bmi_d_mean=mean(d))
-
-mu = fixed_data %>% 
-       filter(Group =="Control") %>% 
-       pull(d) %>% 
-      mean()
-var = fixed_data %>% 
-       filter(Group =="Control") %>% 
-       pull(d) %>% 
-      var()
-
-x<-rnorm(1000,mu,var)
-funss<-function(x) 1/sqrt(2*pi*var)*exp(-(x-mu)^2/2*var^2)
-
- ggplot(fixed_data,aes( x = d, fill=Group)) +
-  geom_density(alpha = .4) +
-  expand_limits(x=c(-6,6)) +
-  geom_vline(data=bmi_mean,
-             aes(xintercept=bmi_d_mean,color=Group),
-               linetype="dashed", size=1)+
-  stat_function(fun = funss,geom="line",color="red",size=.2,alpha = .4)
- 
- 
-mu = fixed_data %>% 
-       filter(Group =="Intervention") %>% 
-       pull(d) %>% 
-      mean()
-var = fixed_data %>% 
-       filter(Group =="Intervention") %>% 
-       pull(d) %>% 
-      var()
-
-x<-rnorm(1000,mu,var)
-funss<-function(x) 1/sqrt(2*pi*var)*exp(-(x-mu)^2/2*var^2)
-
-  fixed_data %>% 
-    filter(Group=="Intervention") %>% 
- ggplot(aes( x = d, fill=Group)) +
-  geom_density(alpha = .5) +
-  expand_limits(x=c(-6,6)) +
-  geom_vline(data=bmi_mean,
-             aes(xintercept=bmi_d_mean[2]),
-               linetype="dashed", size=0.5)+
-  stat_function(fun = funss,geom="line",color="red",size=.7,alpha = .7)
-  
-  
-  
-mu = fixed_data %>% 
-       filter(Group =="Control") %>% 
-       pull(d) %>% 
-      mean()
-var = fixed_data %>% 
-       filter(Group =="Control") %>% 
-       pull(d) %>% 
-      var()
-
-x<-rnorm(1000,mu,var)
-funss<-function(x) 1/sqrt(2*pi*var)*exp(-(x-mu)^2/2*var^2)
-
-    fixed_data %>% 
-    filter(Group=="Control") %>% 
- ggplot(aes( x = d, fill=Group)) +
-  geom_density(alpha = .5,) +
-  expand_limits(x=c(-6,6)) +
-  geom_vline(data=bmi_mean,
-             aes(xintercept=bmi_d_mean[1]),
-               linetype="dashed", size=0.5)+
-  stat_function(fun = funss,geom="line",color="red",size=.7,alpha = .7)
-
-    
-  
-```
-
-
-```{r}
 fixed_data %>% 
-  filter(Group=="Intervention") %>% 
-  pull(d) %>% 
-shapiro.test()
-  
-  fixed_data %>% 
-  filter(Group=="Control") %>% 
-  pull(d) %>% 
-shapiro.test()
+filter(Group=="Intervention") %>% 
+ ggplot(aes(d,..density..))+
+ geom_histogram(color = 'white',
+                fill  = 'gray60',
+                binwidth = .6)+
+ geom_line(stat = 'density',size = 1)+
+ expand_limits(x = c(-6,3)) +
+    labs(
+       title = "Density plot of intervention group",
+       x     = "Difference in intervention group")
+
+
+# grap for control group
+fixed_data %>% 
+filter(Group=="Control") %>% 
+ ggplot(aes(d,..density..))+
+ geom_histogram(color = 'white',
+                fill  = 'gray60',
+                binwidth = .6)+
+ geom_line(stat = 'density',size = 1)+
+  expand_limits(x = c(-4,4)) +
+  labs(
+     title = "Density plot of control group",
+     x     = "Difference in control group")
+
+
+
 ```
 
-According to the graphs, the distridution of Intervention is right skewed while the Control is approximately bell-shaped and can be seemed as normal distribution. 
+
+graph for Q-Q plot
+```{r}
+
+
+ggqqplot(BMI_i$d_inter,main="Q-Q plot for intervention group")
+ggqqplot(BMI_c$d_con,main="Q-Q plot for control group")
+
+```
+
 
 # Problem 3
 ## exactly distribution
 ```{r}
-1-pbinom(9,20,0.6)
+n = 20
+p = 0.6
+
+# Probability that 10 or more restaurants
+1-pbinom(9,n,p)
 ```
-## approximately distribution(normal)
+## approximately distribution(normality)
 ```{r}
-set.seed(1001)
-n=20
-p=0.6
-x = dplyr::tibble(a =c(rbinom(10,n,p)) )
-
-ggplot(x,aes(x = a))+
-  geom_density() +
-  expand_limits(x=c(5,20)) 
-
 mu = n*p
 var = n*p*(1-p)
-#pnorm(1.96,0,1)
-#  qnorm(0.975,0,1)
-1-pnorm(9,mu,sqrt(var))
 
+# probability that 10 or more restaurants(10<x<20)
+pnorm(20.5,mu,sqrt(var))-pnorm(9.5,mu ,sqrt(var))
 
 ```
 ## approximately poisson
 ```{r}
 lambda = n*p
+
+# probability that 10 or more restaurants
 1 - ppois(9,lambda)
 ```
-Both the approximately normal and poisoson distributions are not appropriate distribution of the binominal one in the specific senarios, because both of them do not satisfy the critiria of transmission, which is ... 
 
 # Problem 4
 ## a)
 
-paired-t.test
+Paired-t.test using `t.test` function
 ```{r}
 with(sleep,
      t.test(extra[group == 2],
-            extra[group == 1], paired = TRUE))
+            extra[group == 1], paired = TRUE,
+            alternative = "greater"))
+```
+
+Paired-t.test calculating step by step using formulae
+```{r}
+n  = with(sleep,length(extra[group == 2]))
+d  = with(sleep,sum((extra[group == 2]-extra[group == 1]))/(n))
+sd = with(sleep,sd  (extra[group == 2]-extra[group == 1]))
+
+# calculate the test-statistics
+t_s = d/(sd/sqrt(n))
+
+# calculate t-value when type 1 error = .05
+t_a = qt(0.95,n-1)
+
+p_value = 1-pt(t_s,n-1)
+p_value
+
 
 
 ```
 
 ## b) confidence interval
 
-95% confidence
-
- 0.7001142 2.4598858
+```{r}
+# calculate the confidence interval
+CI = paste(round(d-qt(0.95,n-1)*sqrt(sd^2/n),5),"Inf")
+CI
+```
 
 
 ## c) posteriori power
 
 ```{r}
-delta=1.58
-n=10
-sd=
-  with(sleep,
-  sd(extra[group == 2]-extra[group == 1]))
+
+delta = d
 
 power=
-  pnorm(-qnorm(1-0.05,0,1)+delta/(sd/sqrt(n)))
+  pt(-qt(1-0.05,n-1) + delta/(sd/sqrt(n)),n-1)
+
 power
 
 ```
+
 
