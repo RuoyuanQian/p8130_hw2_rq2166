@@ -1,7 +1,7 @@
 ---
 title: "p8130_hw2_rq2166"
 author: "Ruoyuan Qian"
-date: "2019/10/02"
+date: "2019/10/06"
 output:   
   html_document:
     toc: true
@@ -314,6 +314,7 @@ CI
 
 ## c) posteriori power
 
+Follows t distribution
 ```{r}
 
 delta = d
@@ -324,6 +325,16 @@ power=
 
 power
 
+```
+
+Follows normal distribution 
+```{r}
+delta = d
+
+power =
+  round(pnorm(-round((qnorm(1-0.05)),2)+delta/(sd/sqrt(n))),3)
+
+power
 ```
 
 
